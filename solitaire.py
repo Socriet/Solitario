@@ -108,15 +108,15 @@ class Solitaire(ft.Stack):
         for suite in suites:
             for rank in ranks:
                 file_name = f"{rank.name}_{suite.name}.svg"
-                # print(file_name)
+              
                 self.cards.append(Card(solitaire=self, suite=suite, rank=rank))
-        # self.stock = self.cards
+      
         random.shuffle(self.cards)
         self.controls.extend(self.cards)
         self.update()
 
     def deal_cards(self):
-        # Tableau
+     
         card_index = 0
         first_slot = 0
         while card_index <= 27:
@@ -125,12 +125,12 @@ class Solitaire(ft.Stack):
                 card_index += 1
             first_slot += 1
 
-        # Reveal top cards in slot piles:
+      
         for number in range(len(self.tableau)):
-            # self.tableau[number].pile[-1].turn_face_up()
+          
             self.tableau[number].get_top_card().turn_face_up()
 
-        # Stock pile
+       
         for i in range(28, len(self.cards)):
             self.cards[i].place(self.stock)
 

@@ -3,7 +3,6 @@ from layout import create_appbar
 from settings import Settings
 from solitaire import Solitaire
 
-# logging.basicConfig(level=logging.DEBUG)
 
 
 def main(page: ft.Page):
