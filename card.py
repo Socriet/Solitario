@@ -61,25 +61,20 @@ class Card(ft.GestureDetector):
             delta_x = e.local_delta.x if e.local_delta else 0
             delta_y = e.local_delta.y if e.local_delta else 0
             
-           
             actual_delta_y = max(0, self.top + delta_y) - self.top
             actual_delta_x = max(0, self.left + delta_x) - self.left
 
-           
             for card in self.get_cards_to_move():
                 card.top += actual_delta_y
                 card.left += actual_delta_x
-                
-             
                 card.update()
 
     def drop(self, e: ft.DragEndEvent):
         if self.can_be_moved():
             cards_to_drag = self.get_cards_to_move()
             slots = self.solitaire.tableau + self.solitaire.foundation
-        
+            
             for slot in slots:
-
                 if (
                     abs(self.top - slot.upper_card_top()) < 40
                     and abs(self.left - slot.left) < 40
@@ -97,14 +92,32 @@ class Card(ft.GestureDetector):
                         )
                     ):
                         old_slot = self.slot
+
+                        # Check if a card is about to be revealed
+                        card_flipped = None
+                        if len(old_slot.pile) > len(cards_to_drag) and old_slot.type == "tableau":
+                            top_card_underneath = old_slot.pile[-len(cards_to_drag) - 1]
+                            if not top_card_underneath.face_up:
+                                card_flipped = top_card_underneath
+
                         for card in cards_to_drag:
                             card.place(slot)
-                        if len(old_slot.pile) > 0 and old_slot.type == "tableau":
-                            old_slot.get_top_card().turn_face_up()
+                        
+                        if card_flipped:
+                            card_flipped.turn_face_up()
                         elif old_slot.type == "waste":
                             self.solitaire.display_waste()
-                        self.solitaire.update()
 
+                        # Record the move to history
+                        self.solitaire.history.append({
+                            "type": "move",
+                            "cards": cards_to_drag,
+                            "source": old_slot,
+                            "dest": slot,
+                            "flipped": card_flipped
+                        })
+
+                        self.solitaire.update()
                         return
 
             self.solitaire.bounce_back(cards_to_drag)
@@ -115,25 +128,61 @@ class Card(ft.GestureDetector):
             if self.face_up and self == self.slot.get_top_card():
                 self.solitaire.move_on_top([self])
                 old_slot = self.slot
+                
                 for slot in self.solitaire.foundation:
                     if self.solitaire.check_foundation_rules(self, slot.get_top_card()):
+                        
+                        # Check if a card is about to be revealed
+                        card_flipped = None
+                        if len(old_slot.pile) > 1 and old_slot.type == "tableau":
+                            top_card_underneath = old_slot.pile[-2]
+                            if not top_card_underneath.face_up:
+                                card_flipped = top_card_underneath
+                        
                         self.place(slot)
-                        if len(old_slot.pile) > 0 and old_slot.type == "tableau":
-                            old_slot.get_top_card().turn_face_up()
+                        
+                        if card_flipped:
+                            card_flipped.turn_face_up()
+                        elif old_slot.type == "waste":
+                            self.solitaire.display_waste()
+                        
+                        # Record the move to history
+                        self.solitaire.history.append({
+                            "type": "move",
+                            "cards": [self],
+                            "source": old_slot,
+                            "dest": slot,
+                            "flipped": card_flipped
+                        })
+
                         self.solitaire.update()
                         return
 
     def click(self, e):
         if self.slot is not None and self.slot.type == "stock":
+            # Track which cards we are hiding to undo later
+            hidden_cards = []
             for card in self.solitaire.waste.get_top_three_cards():
                 card.visible = False
+                hidden_cards.append(card)
 
+            # Track which cards we pull to undo later
+            cycled_cards = []
             for i in range(
                 min(self.solitaire.settings.waste_size, len(self.solitaire.stock.pile))
             ):
                 top_card = self.solitaire.stock.pile[-1]
                 top_card.place(self.solitaire.waste)
                 top_card.turn_face_up()
+                cycled_cards.append(top_card)
+            
+            # Record the cycle action
+            self.solitaire.history.append({
+                "type": "cycle_stock",
+                "cycled_cards": cycled_cards,
+                "hidden_waste_cards": hidden_cards
+            })
+
             self.solitaire.display_waste()
             self.solitaire.update()
 
@@ -153,12 +202,11 @@ class Card(ft.GestureDetector):
             self.slot.pile.remove(self)
 
         self.slot = slot
-
         slot.pile.append(self)
         self.solitaire.move_on_top([self])
+        
         if self.solitaire.check_if_you_won():
             self.solitaire.on_win()
-        self.solitaire.update()
 
     def get_cards_to_move(self):
         """returns list of cards that will be dragged together, starting with the current card"""

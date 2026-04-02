@@ -2,7 +2,7 @@ import flet as ft
 from settings import SettingsDialog
 
 
-def create_appbar(page, settings, on_new_game):
+def create_appbar(page, settings, on_new_game, on_undo):
     def new_game_clicked(e):
         on_new_game(settings)
 
@@ -22,6 +22,8 @@ def create_appbar(page, settings, on_new_game):
         title=ft.Text("Flet solitaire"),
         bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
         actions=[
+            # NEW: Added the Undo button
+            ft.TextButton(content="Undo", on_click=lambda e: on_undo()),
             ft.TextButton(content="New game", on_click=new_game_clicked),
             ft.TextButton(content="Rules", on_click=show_rules),
             ft.IconButton(ft.Icons.SETTINGS, on_click=show_settings),

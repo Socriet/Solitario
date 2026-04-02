@@ -30,6 +30,7 @@ class Solitaire(ft.Stack):
         self.deck_passes_remaining = int(self.settings.deck_passes_allowed)
         self.controls = []
         self.on_win = on_win
+        self.history = [] # NEW: History stack for Undo feature
 
     def did_mount(self):
         self.create_slots()
@@ -108,15 +109,14 @@ class Solitaire(ft.Stack):
         for suite in suites:
             for rank in ranks:
                 file_name = f"{rank.name}_{suite.name}.svg"
-              
                 self.cards.append(Card(solitaire=self, suite=suite, rank=rank))
-      
+        
         random.shuffle(self.cards)
         self.controls.extend(self.cards)
         self.update()
 
     def deal_cards(self):
-     
+        # Tableau
         card_index = 0
         first_slot = 0
         while card_index <= 27:
@@ -125,22 +125,19 @@ class Solitaire(ft.Stack):
                 card_index += 1
             first_slot += 1
 
-      
+        # Reveal top cards in slot piles:
         for number in range(len(self.tableau)):
-          
             self.tableau[number].get_top_card().turn_face_up()
 
-       
+        # Stock pile
         for i in range(28, len(self.cards)):
             self.cards[i].place(self.stock)
 
     def move_on_top(self, cards_to_drag):
         """Brings draggable card pile to the top of the stack"""
-
         for card in cards_to_drag:
             self.controls.remove(card)
             self.controls.append(card)
-        self.update()
 
     def bounce_back(self, cards):
         i = 0
@@ -162,6 +159,54 @@ class Solitaire(ft.Stack):
             card = self.waste.pile[0]
             card.turn_face_down()
             card.place(self.stock)
+        self.update()
+
+    # NEW: The Undo Logic processor
+    def undo(self):
+        if not self.history:
+            return
+
+        last_move = self.history.pop()
+        move_type = last_move["type"]
+
+        if move_type == "move":
+            # 1. Revert flipped card (if any)
+            if last_move["flipped"]:
+                last_move["flipped"].turn_face_down()
+
+            # 2. Place cards back into their source slot
+            for card in last_move["cards"]:
+                card.place(last_move["source"])
+
+            # 3. Fix visuals for waste pile if it was involved
+            if last_move["source"].type == "waste" or last_move["dest"].type == "waste":
+                self.display_waste()
+
+        elif move_type == "cycle_stock":
+            # 1. Put cycled cards back into stock, face down
+            for card in reversed(last_move["cycled_cards"]):
+                card.turn_face_down()
+                card.visible = True
+                card.place(self.stock)
+
+            # 2. Reveal the previously hidden waste cards
+            for card in last_move["hidden_waste_cards"]:
+                card.visible = True
+
+            self.display_waste()
+
+        elif move_type == "restart_stock":
+            # Undo a deck reset by reversing stock and throwing it all back to waste face up
+            self.stock.pile.reverse()
+            while len(self.stock.pile) > 0:
+                card = self.stock.pile[0]
+                card.turn_face_up()
+                card.visible = False
+                card.place(self.waste)
+            
+            self.deck_passes_remaining += 1
+            self.display_waste()
+
         self.update()
 
     def check_foundation_rules(self, current_card, top_card=None):

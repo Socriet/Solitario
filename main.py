@@ -3,9 +3,16 @@ from layout import create_appbar
 from settings import Settings
 from solitaire import Solitaire
 
+# logging.basicConfig(level=logging.DEBUG)
 
 
 def main(page: ft.Page):
+    def on_undo():
+        # Solitaire is always the last control added to the page
+        solitaire_instance = page.controls[-1]
+        if hasattr(solitaire_instance, 'undo'):
+            solitaire_instance.undo()
+
     def on_new_game(settings):
         page.controls.pop()
         new_solitaire = Solitaire(settings, on_win)
@@ -24,7 +31,8 @@ def main(page: ft.Page):
         page.update()
 
     settings = Settings()
-    create_appbar(page, settings, on_new_game)
+    # Pass on_undo to the appbar creation
+    create_appbar(page, settings, on_new_game, on_undo)
 
     solitaire = Solitaire(settings, on_win)
     page.add(solitaire)
