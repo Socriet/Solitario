@@ -44,6 +44,13 @@ class Solitaire(ft.Stack):
 
     def save_game(self):
         state = {
+            # NEW: Serialize the user's settings
+            "settings": {
+                "waste_size": self.settings.waste_size,
+                "deck_passes_allowed": self.settings.deck_passes_allowed,
+                "card_back": self.settings.card_back,
+                "table_background": self.settings.table_background
+            },
             "deck_passes_remaining": self.deck_passes_remaining,
             "slots": {
                 "stock": [{"suite": c.suite.name, "rank": c.rank.name, "face_up": c.face_up} for c in self.stock.pile],
@@ -63,6 +70,14 @@ class Solitaire(ft.Stack):
         with open("savegame.json", "r") as f:
             state = json.load(f)
 
+        # NEW: Restore the user's settings and update the background color
+        if "settings" in state:
+            self.settings.waste_size = state["settings"]["waste_size"]
+            self.settings.deck_passes_allowed = state["settings"]["deck_passes_allowed"]
+            self.settings.card_back = state["settings"]["card_back"]
+            self.settings.table_background = state["settings"]["table_background"]
+            self.bg.bgcolor = self.settings.table_background
+
         self.deck_passes_remaining = state["deck_passes_remaining"]
         self.history = [] 
 
@@ -77,6 +92,8 @@ class Solitaire(ft.Stack):
                 card = get_card(c_data["suite"], c_data["rank"])
                 if card:
                     card.place(slot)
+                    # Update card back image just in case it was changed
+                    card.content.content.src = self.settings.card_back
                     if c_data["face_up"]:
                         card.turn_face_up()
                     else:
@@ -101,36 +118,45 @@ class Solitaire(ft.Stack):
         self.update()
 
     def create_slots(self):
+        # NEW: Add a solid background container to act as the casino table
+        self.bg = ft.Container(
+            width=1000,
+            height=500,
+            bgcolor=self.settings.table_background,
+            border_radius=10
+        )
+        self.controls.append(self.bg)
+
         self.stock = Slot(
-            solitaire=self, slot_type="stock", top=0, left=0, border=ft.border.all(1)
+            solitaire=self, slot_type="stock", top=10, left=10, border=ft.border.all(1, ft.Colors.WHITE38)
         )
 
         self.waste = Slot(
-            solitaire=self, slot_type="waste", top=0, left=100, border=None
+            solitaire=self, slot_type="waste", top=10, left=110, border=None
         )
 
         self.foundation = []
-        x = 300
+        x = 310
         for i in range(4):
             self.foundation.append(
                 Slot(
                     solitaire=self,
                     slot_type="foundation",
-                    top=0,
+                    top=10,
                     left=x,
-                    border=ft.border.all(1, "outline"),
+                    border=ft.border.all(1, ft.Colors.WHITE38),
                 )
             )
             x += 100
 
         self.tableau = []
-        x = 0
+        x = 10
         for i in range(7):
             self.tableau.append(
                 Slot(
                     solitaire=self,
                     slot_type="tableau",
-                    top=150,
+                    top=160,
                     left=x,
                     border=None,
                 )
@@ -195,7 +221,6 @@ class Solitaire(ft.Stack):
         self.save_game()
 
     def move_on_top(self, cards_to_drag):
-        """Brings draggable card pile to the top of the stack"""
         for card in cards_to_drag:
             self.controls.remove(card)
             self.controls.append(card)
@@ -220,7 +245,7 @@ class Solitaire(ft.Stack):
             card = self.waste.pile[0]
             card.turn_face_down()
             card.place(self.stock)
-        self.save_game()
+        self.save_game() 
         self.update()
 
     def undo(self):
@@ -262,7 +287,7 @@ class Solitaire(ft.Stack):
             self.deck_passes_remaining += 1
             self.display_waste()
 
-        self.save_game()
+        self.save_game() 
         self.update()
 
     def check_foundation_rules(self, current_card, top_card=None):

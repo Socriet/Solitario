@@ -38,6 +38,7 @@ class Slot(ft.Container):
         if self.type == "stock" and self.solitaire.deck_passes_remaining > 1:
             self.solitaire.deck_passes_remaining -= 1
             
+            # NEW: Record the restart action before doing it
             self.solitaire.history.append({"type": "restart_stock"}) 
             
             self.solitaire.restart_stock()

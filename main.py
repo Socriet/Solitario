@@ -1,14 +1,17 @@
 import flet as ft
 import os
 from layout import create_appbar
-from settings import Settings
+from settings import Settings, SettingsDialog
 from solitaire import Solitaire
 
-
+# logging.basicConfig(level=logging.DEBUG)
 
 
 def main(page: ft.Page):
     page.title = "Flet Solitaire"
+    
+    # NEW: Global settings instance so menu choices persist into the game
+    app_settings = Settings()
     
     rules_md = ft.Markdown(
         """
@@ -36,6 +39,18 @@ def main(page: ft.Page):
         rules_dialog.open = True
         page.update()
 
+    # NEW: Handler for settings applied from the Main Menu
+    def on_menu_settings_applied(new_settings):
+        nonlocal app_settings
+        app_settings = new_settings
+        # We don't launch the game here, just save the preferences!
+
+    def show_settings_from_menu(e):
+        settings_dialog = SettingsDialog(app_settings, on_menu_settings_applied)
+        page.overlay.append(settings_dialog)
+        settings_dialog.open = True
+        page.update()
+
     def on_undo():
         if len(page.controls) > 0:
             solitaire_instance = page.controls[-1]
@@ -47,7 +62,6 @@ def main(page: ft.Page):
 
     def launch_game(settings, load_save=False):
         page.controls.clear()
-        
         create_appbar(page, settings, on_new_game, on_undo, show_main_menu)
         new_solitaire = Solitaire(settings, on_win, load_save=load_save)
         page.add(new_solitaire)
@@ -71,18 +85,21 @@ def main(page: ft.Page):
         
         menu_controls = [
             ft.Text("Flet Solitaire", size=40, weight=ft.FontWeight.BOLD),
-            ft.Container(height=30), # Spacer
-            ft.FilledButton("New Game", on_click=lambda e: launch_game(Settings(), False), width=200, height=50),
+            ft.Container(height=30), 
+            # Launch with global app_settings
+            ft.FilledButton("New Game", on_click=lambda e: launch_game(app_settings, False), width=250, height=50),
         ]
         
         if has_save:
             menu_controls.append(
-                ft.FilledButton("Continue Game", on_click=lambda e: launch_game(Settings(), True), width=200, height=50)
+                ft.FilledButton("Continue Game", on_click=lambda e: launch_game(app_settings, True), width=250, height=50)
             )
             
-        menu_controls.append(
-            ft.FilledButton("Rules", on_click=show_rules, width=200, height=50)
-        )
+        menu_controls.extend([
+            # NEW: Personalization button on Main Menu
+            ft.FilledButton("Personalization & Settings", on_click=show_settings_from_menu, width=250, height=50),
+            ft.FilledButton("Rules", on_click=show_rules, width=250, height=50)
+        ])
         
         menu_view = ft.Container(
             content=ft.Column(
