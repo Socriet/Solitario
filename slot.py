@@ -37,4 +37,7 @@ class Slot(ft.Container):
     def click(self, e):
         if self.type == "stock" and self.solitaire.deck_passes_remaining > 1:
             self.solitaire.deck_passes_remaining -= 1
+            
+            self.solitaire.history.append({"type": "restart_stock"}) 
+            
             self.solitaire.restart_stock()
