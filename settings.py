@@ -3,7 +3,7 @@ import flet as ft
 
 class Settings:
     def __init__(
-        self, waste_size=3, deck_passes_allowed=1000, card_back="/images/card_back0.png", table_background=ft.Colors.GREEN_900, best_score=0, best_time=float('inf')
+        self, waste_size=3, deck_passes_allowed=1000, card_back="/images/card_back0.png", table_background=ft.Colors.GREEN_900, best_score=0, best_time=float('inf'), least_moves=float('inf')
     ):
         self.waste_size = waste_size
         self.deck_passes_allowed = deck_passes_allowed
@@ -11,6 +11,7 @@ class Settings:
         self.table_background = table_background
         self.best_score = best_score
         self.best_time = best_time
+        self.least_moves = least_moves
 
 
 class SettingsDialog(ft.AlertDialog):

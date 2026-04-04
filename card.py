@@ -118,6 +118,7 @@ class Card(ft.GestureDetector):
                             "flipped": card_flipped
                         })
 
+                        self.solitaire.add_move()
                         self.solitaire.save_game() 
                         self.solitaire.update()
                         return
@@ -157,6 +158,7 @@ class Card(ft.GestureDetector):
                             "flipped": card_flipped
                         })
 
+                        self.solitaire.add_move()
                         self.solitaire.save_game() 
                         self.solitaire.update()
                         return
@@ -183,6 +185,7 @@ class Card(ft.GestureDetector):
                 "hidden_waste_cards": hidden_cards
             })
 
+            self.solitaire.add_move()
             self.solitaire.display_waste()
             self.solitaire.save_game() 
             self.solitaire.update()
@@ -211,7 +214,6 @@ class Card(ft.GestureDetector):
             self.solitaire.on_win()
 
     def get_cards_to_move(self):
-        """returns list of cards that will be dragged together, starting with the current card"""
         if self.slot is not None:
             return self.slot.pile[self.slot.pile.index(self) :]
 

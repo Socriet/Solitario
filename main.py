@@ -5,7 +5,7 @@ from layout import create_appbar
 from settings import Settings, SettingsDialog
 from solitaire import Solitaire
 
-
+# logging.basicConfig(level=logging.DEBUG)
 
 
 def main(page: ft.Page):
@@ -13,12 +13,13 @@ def main(page: ft.Page):
     
     app_settings = Settings()
     
-   
+    # Load global high scores if they exist
     if os.path.exists("global_stats.json"):
         with open("global_stats.json", "r") as f:
             stats = json.load(f)
             app_settings.best_score = stats.get("best_score", 0)
             app_settings.best_time = stats.get("best_time", float('inf'))
+            app_settings.least_moves = stats.get("least_moves", float('inf'))
     
     rules_md = ft.Markdown(
         """
@@ -72,9 +73,9 @@ def main(page: ft.Page):
     def launch_game(settings, load_save=False):
         page.controls.clear()
         
-        score_text, timer_text = create_appbar(page, settings, on_new_game, on_undo, show_main_menu)
+        score_text, timer_text, moves_text = create_appbar(page, settings, on_new_game, on_undo, show_main_menu)
         
-        new_solitaire = Solitaire(settings, on_win, score_text, timer_text, load_save=load_save)
+        new_solitaire = Solitaire(settings, on_win, score_text, timer_text, moves_text, load_save=load_save)
         page.add(new_solitaire)
         page.update()
 
@@ -84,6 +85,7 @@ def main(page: ft.Page):
                 stats = json.load(f)
                 app_settings.best_score = stats.get("best_score", 0)
                 app_settings.best_time = stats.get("best_time", float('inf'))
+                app_settings.least_moves = stats.get("least_moves", float('inf'))
                 
         win_dialog = ft.AlertDialog(
             title=ft.Text("YOU WIN!"),
@@ -104,6 +106,7 @@ def main(page: ft.Page):
                 stats = json.load(f)
                 app_settings.best_score = stats.get("best_score", 0)
                 app_settings.best_time = stats.get("best_time", float('inf'))
+                app_settings.least_moves = stats.get("least_moves", float('inf'))
             
         page.appbar = None
         page.controls.clear()
@@ -114,11 +117,15 @@ def main(page: ft.Page):
         if app_settings.best_time != float('inf'):
             mins, secs = divmod(app_settings.best_time, 60)
             best_time_str = f"{mins:02d}:{secs:02d}"
+
+        least_moves_str = str(app_settings.least_moves) if app_settings.least_moves != float('inf') else "--"
             
         stats_display = ft.Row([
             ft.Text(f"High Score: {app_settings.best_score}", size=16, color=ft.Colors.GREY_400),
             ft.Text("|", size=16, color=ft.Colors.GREY_400),
-            ft.Text(f"Fastest Time: {best_time_str}", size=16, color=ft.Colors.GREY_400)
+            ft.Text(f"Fastest Time: {best_time_str}", size=16, color=ft.Colors.GREY_400),
+            ft.Text("|", size=16, color=ft.Colors.GREY_400),
+            ft.Text(f"Least Moves: {least_moves_str}", size=16, color=ft.Colors.GREY_400)
         ], alignment=ft.MainAxisAlignment.CENTER)
         
         menu_controls = [
@@ -154,4 +161,4 @@ def main(page: ft.Page):
 
     show_main_menu()
 
-ft.run(main, assets_dir="assets")
+ft.app(target=main, view=ft.WEB_BROWSER, host="0.0.0.0", port=8080, assets_dir="assets")

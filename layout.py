@@ -17,18 +17,22 @@ def create_appbar(page, settings, on_new_game, on_undo, on_back_to_menu):
         settings_dialog.open = True
         page.update()
 
+    # Define all three UI text elements
     score_text = ft.Text("Score: 0", weight=ft.FontWeight.BOLD, size=18)
     timer_text = ft.Text("Time: 00:00", weight=ft.FontWeight.BOLD, size=18)
+    moves_text = ft.Text("Moves: 0", weight=ft.FontWeight.BOLD, size=18)
 
     page.appbar = ft.AppBar(
         leading=ft.Image(src="/images/card.png"),
         leading_width=30,
         title=ft.Row([
             ft.Text("Flet Solitaire"),
-            ft.Container(width=40),
+            ft.Container(width=40), 
             score_text,
             ft.Container(width=20), 
-            timer_text
+            timer_text,
+            ft.Container(width=20),
+            moves_text  # Add the moves text to the appbar
         ]),
         bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
         actions=[
@@ -61,5 +65,5 @@ def create_appbar(page, settings, on_new_game, on_undo, on_back_to_menu):
         on_dismiss=lambda e: print("Dialog dismissed!"),
     )
     
-  
-    return score_text, timer_text
+    # Return ALL THREE elements so main.py can unpack them successfully
+    return score_text, timer_text, moves_text

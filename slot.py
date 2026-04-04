@@ -39,5 +39,5 @@ class Slot(ft.Container):
             self.solitaire.deck_passes_remaining -= 1
             
             self.solitaire.history.append({"type": "restart_stock"}) 
-            
+            self.solitaire.add_move()
             self.solitaire.restart_stock()

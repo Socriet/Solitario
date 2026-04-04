@@ -20,7 +20,8 @@ class Rank:
 
 
 class Solitaire(ft.Stack):
-    def __init__(self, settings, on_win, score_text, timer_text, load_save=False):
+    # Notice moves_text is now properly accepted here!
+    def __init__(self, settings, on_win, score_text, timer_text, moves_text, load_save=False):
         super().__init__()
         self.width = 1000
         self.height = 500
@@ -34,11 +35,12 @@ class Solitaire(ft.Stack):
         self.history = [] 
         self.load_save = load_save 
         
-       
         self.score_text = score_text
         self.timer_text = timer_text
+        self.moves_text = moves_text
         self.score = 0
         self.elapsed_time = 0
+        self.moves = 0
         self.is_running = True
 
     def did_mount(self):
@@ -50,7 +52,6 @@ class Solitaire(ft.Stack):
         else:
             self.deal_cards()
             
-    
         self.page.run_task(self.update_timer)
 
     def will_unmount(self):
@@ -66,11 +67,17 @@ class Solitaire(ft.Stack):
         mins, secs = divmod(self.elapsed_time, 60)
         self.timer_text.value = f"Time: {mins:02d}:{secs:02d}"
         self.score_text.value = f"Score: {self.score}"
+        self.moves_text.value = f"Moves: {self.moves}"
         self.timer_text.update()
         self.score_text.update()
+        self.moves_text.update()
 
     def add_score(self, points):
         self.score += points
+        self.update_ui_texts()
+        
+    def add_move(self):
+        self.moves += 1
         self.update_ui_texts()
 
     def save_game(self):
@@ -81,11 +88,13 @@ class Solitaire(ft.Stack):
                 "card_back": self.settings.card_back,
                 "table_background": self.settings.table_background,
                 "best_score": self.settings.best_score,
-                "best_time": self.settings.best_time
+                "best_time": self.settings.best_time,
+                "least_moves": self.settings.least_moves
             },
             "deck_passes_remaining": self.deck_passes_remaining,
             "score": self.score,
             "elapsed_time": self.elapsed_time,
+            "moves": self.moves,
             "slots": {
                 "stock": [{"suite": c.suite.name, "rank": c.rank.name, "face_up": c.face_up} for c in self.stock.pile],
                 "waste": [{"suite": c.suite.name, "rank": c.rank.name, "face_up": c.face_up} for c in self.waste.pile],
@@ -115,10 +124,12 @@ class Solitaire(ft.Stack):
             
             self.settings.best_score = state["settings"].get("best_score", 0)
             self.settings.best_time = state["settings"].get("best_time", float('inf'))
+            self.settings.least_moves = state["settings"].get("least_moves", float('inf'))
 
         self.deck_passes_remaining = state.get("deck_passes_remaining", 3)
         self.score = state.get("score", 0)
         self.elapsed_time = state.get("elapsed_time", 0)
+        self.moves = state.get("moves", 0)
         self.history = [] 
 
         def get_card(suite_name, rank_name):
@@ -329,6 +340,7 @@ class Solitaire(ft.Stack):
             self.deck_passes_remaining += 1
             self.display_waste()
 
+        self.add_move()
         self.save_game() 
         self.update()
 
@@ -357,14 +369,21 @@ class Solitaire(ft.Stack):
             self.settings.best_score = self.score
             score_updated = True
             
-       
-        if game_won and self.elapsed_time < self.settings.best_time:
-            self.settings.best_time = self.elapsed_time
-            score_updated = True
+        if game_won:
+            if self.elapsed_time < self.settings.best_time:
+                self.settings.best_time = self.elapsed_time
+                score_updated = True
+            if self.moves < self.settings.least_moves:
+                self.settings.least_moves = self.moves
+                score_updated = True
             
         if score_updated:
             with open("global_stats.json", "w") as f:
-                json.dump({"best_score": self.settings.best_score, "best_time": self.settings.best_time}, f)
+                json.dump({
+                    "best_score": self.settings.best_score, 
+                    "best_time": self.settings.best_time,
+                    "least_moves": self.settings.least_moves
+                }, f)
 
     def check_if_you_won(self):
         cards_num = 0
@@ -373,7 +392,6 @@ class Solitaire(ft.Stack):
         if cards_num == 52:
             self.is_running = False 
             
-           
             self.check_and_save_high_score(game_won=True)
                 
             if os.path.exists("savegame.json"):
