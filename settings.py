@@ -3,12 +3,14 @@ import flet as ft
 
 class Settings:
     def __init__(
-        self, waste_size=3, deck_passes_allowed=1000, card_back="/images/card_back0.png", table_background=ft.Colors.GREEN_900
+        self, waste_size=3, deck_passes_allowed=1000, card_back="/images/card_back0.png", table_background=ft.Colors.GREEN_900, best_score=0, best_time=float('inf')
     ):
         self.waste_size = waste_size
         self.deck_passes_allowed = deck_passes_allowed
         self.card_back = card_back
         self.table_background = table_background
+        self.best_score = best_score
+        self.best_time = best_time
 
 
 class SettingsDialog(ft.AlertDialog):
@@ -38,7 +40,6 @@ class SettingsDialog(ft.AlertDialog):
             ),
         )
         
-        # NEW: Table Background visual selector
         self.table_background = ft.RadioGroup(
             value=self.settings.table_background,
             content=ft.Column(
@@ -83,7 +84,6 @@ class SettingsDialog(ft.AlertDialog):
     def generate_card_backs(self):
         self.card_backs = []
         for i in range(4):
-            # Visually highlight the currently selected card back
             is_selected = self.settings.card_back == f"/images/card_back{i}.png"
             border_style = ft.border.all(3, ft.Colors.BLUE) if is_selected else None
             
@@ -101,7 +101,6 @@ class SettingsDialog(ft.AlertDialog):
             if is_selected:
                 self.selected_card = card
 
-        # Fallback if somehow nothing is selected
         if not hasattr(self, 'selected_card'):
             self.selected_card = self.card_backs[0]
             self.selected_card.border = ft.border.all(3, ft.Colors.BLUE)

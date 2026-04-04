@@ -1,17 +1,24 @@
 import flet as ft
 import os
+import json
 from layout import create_appbar
 from settings import Settings, SettingsDialog
 from solitaire import Solitaire
 
-# logging.basicConfig(level=logging.DEBUG)
+
 
 
 def main(page: ft.Page):
     page.title = "Flet Solitaire"
     
-    # NEW: Global settings instance so menu choices persist into the game
     app_settings = Settings()
+    
+   
+    if os.path.exists("global_stats.json"):
+        with open("global_stats.json", "r") as f:
+            stats = json.load(f)
+            app_settings.best_score = stats.get("best_score", 0)
+            app_settings.best_time = stats.get("best_time", float('inf'))
     
     rules_md = ft.Markdown(
         """
@@ -39,11 +46,9 @@ def main(page: ft.Page):
         rules_dialog.open = True
         page.update()
 
-    # NEW: Handler for settings applied from the Main Menu
     def on_menu_settings_applied(new_settings):
         nonlocal app_settings
         app_settings = new_settings
-        # We don't launch the game here, just save the preferences!
 
     def show_settings_from_menu(e):
         settings_dialog = SettingsDialog(app_settings, on_menu_settings_applied)
@@ -58,16 +63,28 @@ def main(page: ft.Page):
                 solitaire_instance.undo()
 
     def on_new_game(settings):
+        if len(page.controls) > 0 and isinstance(page.controls[-1], Solitaire):
+            active_game = page.controls[-1]
+            active_game.check_and_save_high_score(game_won=False)
+            
         launch_game(settings, load_save=False)
 
     def launch_game(settings, load_save=False):
         page.controls.clear()
-        create_appbar(page, settings, on_new_game, on_undo, show_main_menu)
-        new_solitaire = Solitaire(settings, on_win, load_save=load_save)
+        
+        score_text, timer_text = create_appbar(page, settings, on_new_game, on_undo, show_main_menu)
+        
+        new_solitaire = Solitaire(settings, on_win, score_text, timer_text, load_save=load_save)
         page.add(new_solitaire)
         page.update()
 
     def on_win():
+        if os.path.exists("global_stats.json"):
+            with open("global_stats.json", "r") as f:
+                stats = json.load(f)
+                app_settings.best_score = stats.get("best_score", 0)
+                app_settings.best_time = stats.get("best_time", float('inf'))
+                
         win_dialog = ft.AlertDialog(
             title=ft.Text("YOU WIN!"),
             on_dismiss=lambda e: show_main_menu(),
@@ -75,18 +92,39 @@ def main(page: ft.Page):
         page.overlay.append(win_dialog)
         win_dialog.open = True
         page.update()
-        print("You win")
 
     def show_main_menu():
+        if len(page.controls) > 0 and isinstance(page.controls[-1], Solitaire):
+            active_game = page.controls[-1]
+            active_game.check_and_save_high_score(game_won=False)
+            active_game.is_running = False
+            
+        if os.path.exists("global_stats.json"):
+            with open("global_stats.json", "r") as f:
+                stats = json.load(f)
+                app_settings.best_score = stats.get("best_score", 0)
+                app_settings.best_time = stats.get("best_time", float('inf'))
+            
         page.appbar = None
         page.controls.clear()
         
         has_save = os.path.exists("savegame.json")
         
+        best_time_str = "--:--"
+        if app_settings.best_time != float('inf'):
+            mins, secs = divmod(app_settings.best_time, 60)
+            best_time_str = f"{mins:02d}:{secs:02d}"
+            
+        stats_display = ft.Row([
+            ft.Text(f"High Score: {app_settings.best_score}", size=16, color=ft.Colors.GREY_400),
+            ft.Text("|", size=16, color=ft.Colors.GREY_400),
+            ft.Text(f"Fastest Time: {best_time_str}", size=16, color=ft.Colors.GREY_400)
+        ], alignment=ft.MainAxisAlignment.CENTER)
+        
         menu_controls = [
             ft.Text("Flet Solitaire", size=40, weight=ft.FontWeight.BOLD),
+            stats_display,
             ft.Container(height=30), 
-            # Launch with global app_settings
             ft.FilledButton("New Game", on_click=lambda e: launch_game(app_settings, False), width=250, height=50),
         ]
         
@@ -96,7 +134,6 @@ def main(page: ft.Page):
             )
             
         menu_controls.extend([
-            # NEW: Personalization button on Main Menu
             ft.FilledButton("Personalization & Settings", on_click=show_settings_from_menu, width=250, height=50),
             ft.FilledButton("Rules", on_click=show_rules, width=250, height=50)
         ])

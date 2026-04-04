@@ -93,7 +93,6 @@ class Card(ft.GestureDetector):
                     ):
                         old_slot = self.slot
 
-                        # Check if a card is about to be revealed
                         card_flipped = None
                         if len(old_slot.pile) > len(cards_to_drag) and old_slot.type == "tableau":
                             top_card_underneath = old_slot.pile[-len(cards_to_drag) - 1]
@@ -107,8 +106,10 @@ class Card(ft.GestureDetector):
                             card_flipped.turn_face_up()
                         elif old_slot.type == "waste":
                             self.solitaire.display_waste()
+                            
+                        if slot.type == "foundation":
+                            self.solitaire.add_score(10)
 
-                        # Record the move to history
                         self.solitaire.history.append({
                             "type": "move",
                             "cards": cards_to_drag,
@@ -117,7 +118,7 @@ class Card(ft.GestureDetector):
                             "flipped": card_flipped
                         })
 
-                        self.solitaire.save_game() # Save state
+                        self.solitaire.save_game() 
                         self.solitaire.update()
                         return
 
@@ -133,7 +134,6 @@ class Card(ft.GestureDetector):
                 for slot in self.solitaire.foundation:
                     if self.solitaire.check_foundation_rules(self, slot.get_top_card()):
                         
-                        # Check if a card is about to be revealed
                         card_flipped = None
                         if len(old_slot.pile) > 1 and old_slot.type == "tableau":
                             top_card_underneath = old_slot.pile[-2]
@@ -146,8 +146,9 @@ class Card(ft.GestureDetector):
                             card_flipped.turn_face_up()
                         elif old_slot.type == "waste":
                             self.solitaire.display_waste()
+                            
+                        self.solitaire.add_score(10)
                         
-                        # Record the move to history
                         self.solitaire.history.append({
                             "type": "move",
                             "cards": [self],
@@ -156,19 +157,17 @@ class Card(ft.GestureDetector):
                             "flipped": card_flipped
                         })
 
-                        self.solitaire.save_game() # Save state
+                        self.solitaire.save_game() 
                         self.solitaire.update()
                         return
 
     def click(self, e):
         if self.slot is not None and self.slot.type == "stock":
-            # Track which cards we are hiding to undo later
             hidden_cards = []
             for card in self.solitaire.waste.get_top_three_cards():
                 card.visible = False
                 hidden_cards.append(card)
 
-            # Track which cards we pull to undo later
             cycled_cards = []
             for i in range(
                 min(self.solitaire.settings.waste_size, len(self.solitaire.stock.pile))
@@ -178,7 +177,6 @@ class Card(ft.GestureDetector):
                 top_card.turn_face_up()
                 cycled_cards.append(top_card)
             
-            # Record the cycle action
             self.solitaire.history.append({
                 "type": "cycle_stock",
                 "cycled_cards": cycled_cards,
@@ -186,7 +184,7 @@ class Card(ft.GestureDetector):
             })
 
             self.solitaire.display_waste()
-            self.solitaire.save_game() # Save state
+            self.solitaire.save_game() 
             self.solitaire.update()
 
         if self.slot is not None and self.slot.type == "tableau":
@@ -194,7 +192,7 @@ class Card(ft.GestureDetector):
                 self.slot.pile
             ) - 1 == self.slot.pile.index(self):
                 self.turn_face_up()
-                self.solitaire.save_game() # Save state
+                self.solitaire.save_game() 
 
     def place(self, slot):
         self.top = slot.top

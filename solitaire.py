@@ -1,6 +1,7 @@
 import random
 import json
 import os
+import asyncio
 import flet as ft
 from card import Card
 from slot import Slot
@@ -19,7 +20,7 @@ class Rank:
 
 
 class Solitaire(ft.Stack):
-    def __init__(self, settings, on_win, load_save=False):
+    def __init__(self, settings, on_win, score_text, timer_text, load_save=False):
         super().__init__()
         self.width = 1000
         self.height = 500
@@ -32,6 +33,13 @@ class Solitaire(ft.Stack):
         self.on_win = on_win
         self.history = [] 
         self.load_save = load_save 
+        
+       
+        self.score_text = score_text
+        self.timer_text = timer_text
+        self.score = 0
+        self.elapsed_time = 0
+        self.is_running = True
 
     def did_mount(self):
         self.create_slots()
@@ -41,17 +49,43 @@ class Solitaire(ft.Stack):
             self.load_game_state()
         else:
             self.deal_cards()
+            
+    
+        self.page.run_task(self.update_timer)
+
+    def will_unmount(self):
+        self.is_running = False
+
+    async def update_timer(self):
+        while self.is_running:
+            await asyncio.sleep(1)
+            self.elapsed_time += 1
+            self.update_ui_texts()
+
+    def update_ui_texts(self):
+        mins, secs = divmod(self.elapsed_time, 60)
+        self.timer_text.value = f"Time: {mins:02d}:{secs:02d}"
+        self.score_text.value = f"Score: {self.score}"
+        self.timer_text.update()
+        self.score_text.update()
+
+    def add_score(self, points):
+        self.score += points
+        self.update_ui_texts()
 
     def save_game(self):
         state = {
-            # NEW: Serialize the user's settings
             "settings": {
                 "waste_size": self.settings.waste_size,
                 "deck_passes_allowed": self.settings.deck_passes_allowed,
                 "card_back": self.settings.card_back,
-                "table_background": self.settings.table_background
+                "table_background": self.settings.table_background,
+                "best_score": self.settings.best_score,
+                "best_time": self.settings.best_time
             },
             "deck_passes_remaining": self.deck_passes_remaining,
+            "score": self.score,
+            "elapsed_time": self.elapsed_time,
             "slots": {
                 "stock": [{"suite": c.suite.name, "rank": c.rank.name, "face_up": c.face_up} for c in self.stock.pile],
                 "waste": [{"suite": c.suite.name, "rank": c.rank.name, "face_up": c.face_up} for c in self.waste.pile],
@@ -70,15 +104,21 @@ class Solitaire(ft.Stack):
         with open("savegame.json", "r") as f:
             state = json.load(f)
 
-        # NEW: Restore the user's settings and update the background color
         if "settings" in state:
-            self.settings.waste_size = state["settings"]["waste_size"]
-            self.settings.deck_passes_allowed = state["settings"]["deck_passes_allowed"]
-            self.settings.card_back = state["settings"]["card_back"]
-            self.settings.table_background = state["settings"]["table_background"]
-            self.bg.bgcolor = self.settings.table_background
+            self.settings.waste_size = state["settings"].get("waste_size", 3)
+            self.settings.deck_passes_allowed = state["settings"].get("deck_passes_allowed", 1000)
+            self.settings.card_back = state["settings"].get("card_back", "/images/card_back0.png")
+            
+            bg_color = state["settings"].get("table_background", ft.Colors.GREEN_900)
+            self.settings.table_background = bg_color
+            self.bg.bgcolor = bg_color
+            
+            self.settings.best_score = state["settings"].get("best_score", 0)
+            self.settings.best_time = state["settings"].get("best_time", float('inf'))
 
-        self.deck_passes_remaining = state["deck_passes_remaining"]
+        self.deck_passes_remaining = state.get("deck_passes_remaining", 3)
+        self.score = state.get("score", 0)
+        self.elapsed_time = state.get("elapsed_time", 0)
         self.history = [] 
 
         def get_card(suite_name, rank_name):
@@ -92,7 +132,6 @@ class Solitaire(ft.Stack):
                 card = get_card(c_data["suite"], c_data["rank"])
                 if card:
                     card.place(slot)
-                    # Update card back image just in case it was changed
                     card.content.content.src = self.settings.card_back
                     if c_data["face_up"]:
                         card.turn_face_up()
@@ -115,10 +154,10 @@ class Solitaire(ft.Stack):
             card.visible = False
             
         self.display_waste()
+        self.update_ui_texts()
         self.update()
 
     def create_slots(self):
-        # NEW: Add a solid background container to act as the casino table
         self.bg = ft.Container(
             width=1000,
             height=500,
@@ -264,6 +303,9 @@ class Solitaire(ft.Stack):
 
             if last_move["source"].type == "waste" or last_move["dest"].type == "waste":
                 self.display_waste()
+                
+            if last_move["dest"].type == "foundation":
+                self.add_score(-10)
 
         elif move_type == "cycle_stock":
             for card in reversed(last_move["cycled_cards"]):
@@ -307,12 +349,33 @@ class Solitaire(ft.Stack):
             )
         else:
             return current_card.rank.name == "King"
+            
+    def check_and_save_high_score(self, game_won=False):
+        score_updated = False
+        
+        if self.score > self.settings.best_score:
+            self.settings.best_score = self.score
+            score_updated = True
+            
+       
+        if game_won and self.elapsed_time < self.settings.best_time:
+            self.settings.best_time = self.elapsed_time
+            score_updated = True
+            
+        if score_updated:
+            with open("global_stats.json", "w") as f:
+                json.dump({"best_score": self.settings.best_score, "best_time": self.settings.best_time}, f)
 
     def check_if_you_won(self):
         cards_num = 0
         for slot in self.foundation:
             cards_num += len(slot.pile)
         if cards_num == 52:
+            self.is_running = False 
+            
+           
+            self.check_and_save_high_score(game_won=True)
+                
             if os.path.exists("savegame.json"):
                 os.remove("savegame.json")
             return True
