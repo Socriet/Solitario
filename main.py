@@ -5,15 +5,11 @@ from layout import create_appbar
 from settings import Settings, SettingsDialog
 from solitaire import Solitaire
 
-# logging.basicConfig(level=logging.DEBUG)
-
-
 def main(page: ft.Page):
     page.title = "Flet Solitaire"
     
     app_settings = Settings()
     
-    # Load global high scores if they exist
     if os.path.exists("global_stats.json"):
         with open("global_stats.json", "r") as f:
             stats = json.load(f)
@@ -63,6 +59,15 @@ def main(page: ft.Page):
             if hasattr(solitaire_instance, 'undo'):
                 solitaire_instance.undo()
 
+    def on_save():
+        if len(page.controls) > 0:
+            solitaire_instance = page.controls[-1]
+            if hasattr(solitaire_instance, 'save_game'):
+                solitaire_instance.save_game()
+                page.snack_bar = ft.SnackBar(ft.Text("Game manually saved!"), duration=2000)
+                page.snack_bar.open = True
+                page.update()
+
     def on_new_game(settings):
         if len(page.controls) > 0 and isinstance(page.controls[-1], Solitaire):
             active_game = page.controls[-1]
@@ -73,7 +78,7 @@ def main(page: ft.Page):
     def launch_game(settings, load_save=False):
         page.controls.clear()
         
-        score_text, timer_text, moves_text = create_appbar(page, settings, on_new_game, on_undo, show_main_menu)
+        score_text, timer_text, moves_text = create_appbar(page, settings, on_new_game, on_undo, on_save, show_main_menu)
         
         new_solitaire = Solitaire(settings, on_win, score_text, timer_text, moves_text, load_save=load_save)
         page.add(new_solitaire)
