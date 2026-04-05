@@ -89,14 +89,13 @@ def main(page: ft.Page):
         
         new_solitaire = Solitaire(settings, on_win, score_text, timer_text, moves_text, load_save=load_save)
         
-        # Give the board fixed dimensions and scale it from the top-left
+        # Give the board fixed dimensions and scale it directly using the float value
         board_container = ft.Container(
             content=new_solitaire,
             width=720,  
             height=650, 
-            scale=ft.transform.Scale(scale=settings.board_scale),
+            scale=settings.board_scale,
             alignment=ft.alignment.top_left,
-            transform_alignment=ft.alignment.top_left,
         )
         
         # Wrapping in a hidden scroll row prevents Flet from forcibly squishing the board layout width on mobile
@@ -104,7 +103,8 @@ def main(page: ft.Page):
             controls=[board_container],
             scroll=ft.ScrollMode.HIDDEN,
             expand=True,
-            vertical_alignment=ft.CrossAxisAlignment.START
+            vertical_alignment=ft.CrossAxisAlignment.START,
+            alignment=ft.MainAxisAlignment.START,
         )
         
         page.add(wrapper)
