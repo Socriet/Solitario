@@ -33,9 +33,15 @@ def main(page: ft.Page):
         """
     )
 
+    # MOBILE FIX: Wrap the rules in a scrollable container
+    rules_content = ft.Container(
+        content=ft.Column([rules_md], scroll=ft.ScrollMode.AUTO),
+        height=400, # Forces it to scroll if the screen is smaller than 400px
+    )
+
     rules_dialog = ft.AlertDialog(
         title=ft.Text("Solitaire rules"),
-        content=rules_md,
+        content=rules_content,
         on_dismiss=lambda e: print("Dialog dismissed!"),
     )
 
@@ -56,24 +62,24 @@ def main(page: ft.Page):
 
     def on_undo():
         if len(page.controls) > 0:
-            game_container = page.controls[-1]
-            if hasattr(game_container, 'content') and hasattr(game_container.content, 'undo'):
-                game_container.content.undo()
+            zoom_container = page.controls[-1]
+            if hasattr(zoom_container, 'content') and hasattr(zoom_container.content, 'undo'):
+                zoom_container.content.undo()
 
     def on_save():
         if len(page.controls) > 0:
-            game_container = page.controls[-1]
-            if hasattr(game_container, 'content') and hasattr(game_container.content, 'save_game'):
-                game_container.content.save_game()
+            zoom_container = page.controls[-1]
+            if hasattr(zoom_container, 'content') and hasattr(zoom_container.content, 'save_game'):
+                zoom_container.content.save_game()
                 page.snack_bar = ft.SnackBar(ft.Text("Game manually saved!"), duration=2000)
                 page.snack_bar.open = True
                 page.update()
 
     def on_new_game(settings):
         if len(page.controls) > 0:
-            game_container = page.controls[-1]
-            if hasattr(game_container, 'content') and isinstance(game_container.content, Solitaire):
-                active_game = game_container.content
+            zoom_container = page.controls[-1]
+            if hasattr(zoom_container, 'content') and isinstance(zoom_container.content, Solitaire):
+                active_game = zoom_container.content
                 active_game.check_and_save_high_score(game_won=False)
             
         launch_game(settings, load_save=False)
@@ -85,19 +91,19 @@ def main(page: ft.Page):
         
         new_solitaire = Solitaire(settings, on_win, score_text, timer_text, moves_text, load_save=load_save)
         
-        game_container = ft.Container(content=new_solitaire, alignment=ft.alignment.top_center)
+        # --- NEW PINCH-TO-ZOOM LOGIC ---
+        # This replaces the custom resizing. It gives native zoom/pan capabilities.
+        zoomable_board = ft.InteractiveViewer(
+            content=new_solitaire,
+            pan_enabled=True,
+            scale_enabled=True,
+            min_scale=0.1,  # How far they can zoom out
+            max_scale=3.0,  # How far they can zoom in
+            boundary_margin=ft.margin.all(1000), # Gives them room to pan around
+            expand=True
+        )
         
-        def on_resize(e):
-            if page.window_width < 800:
-                scale_factor = page.window_width / 800
-                game_container.scale = ft.Scale(scale=scale_factor)
-            else:
-                game_container.scale = ft.Scale(scale=1.0)
-            page.update()
-
-        page.on_resize = on_resize
-        page.add(game_container)
-        on_resize(None) 
+        page.add(zoomable_board)
         page.update()
 
     def on_win():
@@ -118,9 +124,9 @@ def main(page: ft.Page):
 
     def show_main_menu():
         if len(page.controls) > 0:
-            game_container = page.controls[-1]
-            if hasattr(game_container, 'content') and isinstance(game_container.content, Solitaire):
-                active_game = game_container.content
+            zoom_container = page.controls[-1]
+            if hasattr(zoom_container, 'content') and isinstance(zoom_container.content, Solitaire):
+                active_game = zoom_container.content
                 active_game.check_and_save_high_score(game_won=False)
                 active_game.is_running = False
             

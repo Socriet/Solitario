@@ -1,6 +1,5 @@
 import flet as ft
 
-
 class Settings:
     def __init__(
         self, waste_size=3, deck_passes_allowed=1000, card_back="/images/card_back0.png", table_background=ft.Colors.GREEN_900, best_score=0, best_time=float('inf'), least_moves=float('inf')
@@ -28,7 +27,8 @@ class SettingsDialog(ft.AlertDialog):
                 controls=[
                     ft.Radio(value=1, label="One card"),
                     ft.Radio(value=3, label="Three cards"),
-                ]
+                ],
+                wrap=True # MOBILE FIX: Wraps text to a new line if squished
             ),
         )
         self.deck_passes_allowed = ft.RadioGroup(
@@ -37,7 +37,8 @@ class SettingsDialog(ft.AlertDialog):
                 controls=[
                     ft.Radio(value=3, label="Three"),
                     ft.Radio(value=1000, label="Unlimited"),
-                ]
+                ],
+                wrap=True # MOBILE FIX: Wraps text to a new line if squished
             ),
         )
         
@@ -55,28 +56,36 @@ class SettingsDialog(ft.AlertDialog):
 
         self.generate_card_backs()
 
-        self.content = ft.Column(
-            controls=[
-                ft.Text("Table Background:", weight=ft.FontWeight.BOLD),
-                self.table_background,
-                ft.Container(height=10),
-                ft.Text("Card Back Design:", weight=ft.FontWeight.BOLD),
-                ft.Row(controls=self.card_backs),
-                ft.Divider(height=20, color=ft.Colors.WHITE24),
-                ft.Text("Gameplay Rules", size=16, weight=ft.FontWeight.BOLD),
-                ft.Text("Waste pile size:"),
-                self.waste_size,
-                ft.Text("Passes through the deck:"),
-                self.deck_passes_allowed,
-                ft.Container(height=10),
-                ft.Checkbox(
-                    label="Applying settings during a game will restart it.",
-                    value=True,
-                    disabled=True,
-                ),
-            ],
-            tight=True,
+        # MOBILE FIX: Wrap the entire column in a fixed-height, scrollable container
+        self.content = ft.Container(
+            content=ft.Column(
+                controls=[
+                    ft.Text("Table Background:", weight=ft.FontWeight.BOLD),
+                    self.table_background,
+                    ft.Container(height=10),
+                    ft.Text("Card Back Design:", weight=ft.FontWeight.BOLD),
+                    # MOBILE FIX: Added horizontal scrolling for the card images
+                    ft.Row(controls=self.card_backs, scroll=ft.ScrollMode.AUTO),
+                    ft.Divider(height=20, color=ft.Colors.WHITE24),
+                    ft.Text("Gameplay Rules", size=16, weight=ft.FontWeight.BOLD),
+                    ft.Text("Waste pile size:"),
+                    self.waste_size,
+                    ft.Text("Passes through the deck:"),
+                    self.deck_passes_allowed,
+                    ft.Container(height=10),
+                    ft.Checkbox(
+                        label="Applying settings during a game will restart it.",
+                        value=True,
+                        disabled=True,
+                    ),
+                ],
+                tight=True,
+                scroll=ft.ScrollMode.AUTO, # Turns on vertical scrolling
+            ),
+            height=400, # Forces scroll if the phone screen is smaller than 400px
+            width=350,
         )
+        
         self.actions = [
             ft.TextButton("Cancel", on_click=self.cancel),
             ft.FilledButton("Apply settings", on_click=self.apply_settings),
