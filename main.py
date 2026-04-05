@@ -195,4 +195,9 @@ def main(page: ft.Page):
 
     show_main_menu()
 
-ft.app(target=main, view=ft.WEB_BROWSER, host="0.0.0.0", port=8080, assets_dir="assets")
+import uvicorn
+
+asgi_app = ft.run(main, export_asgi_app=True, assets_dir="assets")
+
+if __name__ == "__main__":
+    uvicorn.run(asgi_app, host="0.0.0.0", port=5000)
