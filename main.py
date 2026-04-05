@@ -33,10 +33,8 @@ def main(page: ft.Page):
         """
     )
 
-    # MOBILE FIX: Wrap the rules in a scrollable container
     rules_content = ft.Container(
-        content=ft.Column([rules_md], scroll=ft.ScrollMode.AUTO),
-        height=400, # Forces it to scroll if the screen is smaller than 400px
+        content=ft.Column([rules_md], scroll=ft.ScrollMode.AUTO, tight=True)
     )
 
     rules_dialog = ft.AlertDialog(
@@ -91,19 +89,14 @@ def main(page: ft.Page):
         
         new_solitaire = Solitaire(settings, on_win, score_text, timer_text, moves_text, load_save=load_save)
         
-        # --- NEW PINCH-TO-ZOOM LOGIC ---
-        # This replaces the custom resizing. It gives native zoom/pan capabilities.
-        zoomable_board = ft.InteractiveViewer(
+        scaled_board = ft.Container(
             content=new_solitaire,
-            pan_enabled=True,
-            scale_enabled=True,
-            min_scale=0.1,  # How far they can zoom out
-            max_scale=3.0,  # How far they can zoom in
-            boundary_margin=ft.margin.all(1000), # Gives them room to pan around
+            scale=ft.transform.Scale(scale=settings.board_scale),
+            alignment=ft.alignment.top_left,
             expand=True
         )
         
-        page.add(zoomable_board)
+        page.add(scaled_board)
         page.update()
 
     def on_win():

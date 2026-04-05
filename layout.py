@@ -63,10 +63,8 @@ def create_appbar(page, settings, on_new_game, on_undo, on_save, on_back_to_menu
         """
     )
 
-    # MOBILE FIX: Wrap the rules in a scrollable container
     rules_content = ft.Container(
-        content=ft.Column([rules_md], scroll=ft.ScrollMode.AUTO),
-        height=400, 
+        content=ft.Column([rules_md], scroll=ft.ScrollMode.AUTO, tight=True)
     )
 
     rules_dialog = ft.AlertDialog(

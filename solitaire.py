@@ -20,7 +20,6 @@ class Rank:
 
 
 class Solitaire(ft.Stack):
-    # Notice moves_text is now properly accepted here!
     def __init__(self, settings, on_win, score_text, timer_text, moves_text, load_save=False):
         super().__init__()
         self.width = 1000
@@ -89,7 +88,8 @@ class Solitaire(ft.Stack):
                 "table_background": self.settings.table_background,
                 "best_score": self.settings.best_score,
                 "best_time": self.settings.best_time,
-                "least_moves": self.settings.least_moves
+                "least_moves": self.settings.least_moves,
+                "board_scale": self.settings.board_scale
             },
             "deck_passes_remaining": self.deck_passes_remaining,
             "score": self.score,
@@ -125,6 +125,7 @@ class Solitaire(ft.Stack):
             self.settings.best_score = state["settings"].get("best_score", 0)
             self.settings.best_time = state["settings"].get("best_time", float('inf'))
             self.settings.least_moves = state["settings"].get("least_moves", float('inf'))
+            self.settings.board_scale = state["settings"].get("board_scale", 1.0)
 
         self.deck_passes_remaining = state.get("deck_passes_remaining", 3)
         self.score = state.get("score", 0)
