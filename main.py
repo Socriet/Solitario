@@ -7,8 +7,7 @@ from solitaire import Solitaire
 
 def main(page: ft.Page):
     page.title = "Flet Solitaire"
-    
-    page.scroll = "auto"
+    page.padding = 0
     
     app_settings = Settings()
     
@@ -57,23 +56,25 @@ def main(page: ft.Page):
 
     def on_undo():
         if len(page.controls) > 0:
-            solitaire_instance = page.controls[-1]
-            if hasattr(solitaire_instance, 'undo'):
-                solitaire_instance.undo()
+            game_container = page.controls[-1]
+            if hasattr(game_container, 'content') and hasattr(game_container.content, 'undo'):
+                game_container.content.undo()
 
     def on_save():
         if len(page.controls) > 0:
-            solitaire_instance = page.controls[-1]
-            if hasattr(solitaire_instance, 'save_game'):
-                solitaire_instance.save_game()
+            game_container = page.controls[-1]
+            if hasattr(game_container, 'content') and hasattr(game_container.content, 'save_game'):
+                game_container.content.save_game()
                 page.snack_bar = ft.SnackBar(ft.Text("Game manually saved!"), duration=2000)
                 page.snack_bar.open = True
                 page.update()
 
     def on_new_game(settings):
-        if len(page.controls) > 0 and isinstance(page.controls[-1], Solitaire):
-            active_game = page.controls[-1]
-            active_game.check_and_save_high_score(game_won=False)
+        if len(page.controls) > 0:
+            game_container = page.controls[-1]
+            if hasattr(game_container, 'content') and isinstance(game_container.content, Solitaire):
+                active_game = game_container.content
+                active_game.check_and_save_high_score(game_won=False)
             
         launch_game(settings, load_save=False)
 
@@ -83,7 +84,20 @@ def main(page: ft.Page):
         score_text, timer_text, moves_text = create_appbar(page, settings, on_new_game, on_undo, on_save, show_main_menu)
         
         new_solitaire = Solitaire(settings, on_win, score_text, timer_text, moves_text, load_save=load_save)
-        page.add(new_solitaire)
+        
+        game_container = ft.Container(content=new_solitaire, alignment=ft.alignment.top_center)
+        
+        def on_resize(e):
+            if page.window_width < 800:
+                scale_factor = page.window_width / 800
+                game_container.scale = ft.Scale(scale=scale_factor)
+            else:
+                game_container.scale = ft.Scale(scale=1.0)
+            page.update()
+
+        page.on_resize = on_resize
+        page.add(game_container)
+        on_resize(None) 
         page.update()
 
     def on_win():
@@ -103,10 +117,12 @@ def main(page: ft.Page):
         page.update()
 
     def show_main_menu():
-        if len(page.controls) > 0 and isinstance(page.controls[-1], Solitaire):
-            active_game = page.controls[-1]
-            active_game.check_and_save_high_score(game_won=False)
-            active_game.is_running = False
+        if len(page.controls) > 0:
+            game_container = page.controls[-1]
+            if hasattr(game_container, 'content') and isinstance(game_container.content, Solitaire):
+                active_game = game_container.content
+                active_game.check_and_save_high_score(game_won=False)
+                active_game.is_running = False
             
         if os.path.exists("global_stats.json"):
             with open("global_stats.json", "r") as f:
@@ -168,4 +184,4 @@ def main(page: ft.Page):
 
     show_main_menu()
 
-ft.app(target=main, view=ft.AppView.WEB_BROWSER, host="0.0.0.0", port=5000, assets_dir="assets")
+ft.app(target=main, view=ft.WEB_BROWSER, host="0.0.0.0", port=8080, assets_dir="assets")
