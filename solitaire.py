@@ -22,8 +22,9 @@ class Rank:
 class Solitaire(ft.Stack):
     def __init__(self, settings, on_win, score_text, timer_text, moves_text, load_save=False):
         super().__init__()
-        self.width = 1000
-        self.height = 500
+        self.width = 720
+        self.height = 650
+        self.clip_behavior = ft.ClipBehavior.NONE
         self.current_top = 0
         self.current_left = 0
         self.card_offset = 20
@@ -171,8 +172,8 @@ class Solitaire(ft.Stack):
 
     def create_slots(self):
         self.bg = ft.Container(
-            width=1000,
-            height=500,
+            width=720,
+            height=650,
             bgcolor=self.settings.table_background,
             border_radius=10
         )

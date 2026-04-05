@@ -1,6 +1,5 @@
 import flet as ft
 
-
 class Card(ft.GestureDetector):
     def __init__(self, solitaire, suite, rank):
         super().__init__()
@@ -52,8 +51,8 @@ class Card(ft.GestureDetector):
         if self.can_be_moved():
             cards_to_drag = self.get_cards_to_move()
             self.solitaire.move_on_top(cards_to_drag)
-            self.solitaire.current_top = e.control.top
-            self.solitaire.current_left = e.control.left
+            self.solitaire.current_top = self.top
+            self.solitaire.current_left = self.left
             self.solitaire.update()
 
     def drag(self, e: ft.DragUpdateEvent):
@@ -74,6 +73,7 @@ class Card(ft.GestureDetector):
             cards_to_drag = self.get_cards_to_move()
             slots = self.solitaire.tableau + self.solitaire.foundation
             
+            found_slot = False
             for slot in slots:
                 if (
                     abs(self.top - slot.upper_card_top()) < 40
@@ -92,8 +92,8 @@ class Card(ft.GestureDetector):
                         )
                     ):
                         old_slot = self.slot
-
                         card_flipped = None
+                        
                         if len(old_slot.pile) > len(cards_to_drag) and old_slot.type == "tableau":
                             top_card_underneath = old_slot.pile[-len(cards_to_drag) - 1]
                             if not top_card_underneath.face_up:
@@ -120,11 +120,18 @@ class Card(ft.GestureDetector):
 
                         self.solitaire.add_move()
                         self.solitaire.save_game() 
+                        
+                        for card in cards_to_drag:
+                            card.update()
                         self.solitaire.update()
-                        return
+                        found_slot = True
+                        break
 
-            self.solitaire.bounce_back(cards_to_drag)
-            self.solitaire.update()
+            if not found_slot:
+                self.solitaire.bounce_back(cards_to_drag)
+                for card in cards_to_drag:
+                    card.update()
+                self.solitaire.update()
 
     def doubleclick(self, e):
         if self.slot is not None and self.slot.type in ("waste", "tableau"):
@@ -134,7 +141,6 @@ class Card(ft.GestureDetector):
                 
                 for slot in self.solitaire.foundation:
                     if self.solitaire.check_foundation_rules(self, slot.get_top_card()):
-                        
                         card_flipped = None
                         if len(old_slot.pile) > 1 and old_slot.type == "tableau":
                             top_card_underneath = old_slot.pile[-2]
@@ -160,6 +166,7 @@ class Card(ft.GestureDetector):
 
                         self.solitaire.add_move()
                         self.solitaire.save_game() 
+                        self.update() 
                         self.solitaire.update()
                         return
 
@@ -168,6 +175,7 @@ class Card(ft.GestureDetector):
             hidden_cards = []
             for card in self.solitaire.waste.get_top_three_cards():
                 card.visible = False
+                card.update()
                 hidden_cards.append(card)
 
             cycled_cards = []
@@ -216,5 +224,4 @@ class Card(ft.GestureDetector):
     def get_cards_to_move(self):
         if self.slot is not None:
             return self.slot.pile[self.slot.pile.index(self) :]
-
         return [self]

@@ -60,13 +60,13 @@ def main(page: ft.Page):
 
     def on_undo():
         if len(page.controls) > 0:
-            zoom_container = page.controls[-1]
+            zoom_container = page.controls[-1].controls[0]
             if hasattr(zoom_container, 'content') and hasattr(zoom_container.content, 'undo'):
                 zoom_container.content.undo()
 
     def on_save():
         if len(page.controls) > 0:
-            zoom_container = page.controls[-1]
+            zoom_container = page.controls[-1].controls[0]
             if hasattr(zoom_container, 'content') and hasattr(zoom_container.content, 'save_game'):
                 zoom_container.content.save_game()
                 page.snack_bar = ft.SnackBar(ft.Text("Game manually saved!"), duration=2000)
@@ -75,7 +75,7 @@ def main(page: ft.Page):
 
     def on_new_game(settings):
         if len(page.controls) > 0:
-            zoom_container = page.controls[-1]
+            zoom_container = page.controls[-1].controls[0]
             if hasattr(zoom_container, 'content') and isinstance(zoom_container.content, Solitaire):
                 active_game = zoom_container.content
                 active_game.check_and_save_high_score(game_won=False)
@@ -89,14 +89,25 @@ def main(page: ft.Page):
         
         new_solitaire = Solitaire(settings, on_win, score_text, timer_text, moves_text, load_save=load_save)
         
-        scaled_board = ft.Container(
+        # Give the board fixed dimensions and scale it from the top-left
+        board_container = ft.Container(
             content=new_solitaire,
+            width=720,  
+            height=650, 
             scale=ft.transform.Scale(scale=settings.board_scale),
             alignment=ft.alignment.top_left,
-            expand=True
+            transform_alignment=ft.alignment.top_left,
         )
         
-        page.add(scaled_board)
+        # Wrapping in a hidden scroll row prevents Flet from forcibly squishing the board layout width on mobile
+        wrapper = ft.Row(
+            controls=[board_container],
+            scroll=ft.ScrollMode.HIDDEN,
+            expand=True,
+            vertical_alignment=ft.CrossAxisAlignment.START
+        )
+        
+        page.add(wrapper)
         page.update()
 
     def on_win():
@@ -117,11 +128,12 @@ def main(page: ft.Page):
 
     def show_main_menu():
         if len(page.controls) > 0:
-            zoom_container = page.controls[-1]
-            if hasattr(zoom_container, 'content') and isinstance(zoom_container.content, Solitaire):
-                active_game = zoom_container.content
-                active_game.check_and_save_high_score(game_won=False)
-                active_game.is_running = False
+            if hasattr(page.controls[-1], 'controls') and len(page.controls[-1].controls) > 0:
+                zoom_container = page.controls[-1].controls[0]
+                if hasattr(zoom_container, 'content') and isinstance(zoom_container.content, Solitaire):
+                    active_game = zoom_container.content
+                    active_game.check_and_save_high_score(game_won=False)
+                    active_game.is_running = False
             
         if os.path.exists("global_stats.json"):
             with open("global_stats.json", "r") as f:
