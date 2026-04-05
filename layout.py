@@ -16,29 +16,34 @@ def create_appbar(page, settings, on_new_game, on_undo, on_save, on_back_to_menu
         settings_dialog.open = True
         page.update()
 
-    score_text = ft.Text("Score: 0", weight=ft.FontWeight.BOLD, size=18)
-    timer_text = ft.Text("Time: 00:00", weight=ft.FontWeight.BOLD, size=18)
-    moves_text = ft.Text("Moves: 0", weight=ft.FontWeight.BOLD, size=18)
+    score_text = ft.Text("Score: 0", weight=ft.FontWeight.BOLD, size=16)
+    timer_text = ft.Text("Time: 00:00", weight=ft.FontWeight.BOLD, size=16)
+    moves_text = ft.Text("Moves: 0", weight=ft.FontWeight.BOLD, size=16)
+
+    appbar_title_row = ft.Row(
+        controls=[
+            ft.Text("Flet Solitaire", size=18),
+            ft.Container(width=20), 
+            score_text,
+            ft.Container(width=10), 
+            timer_text,
+            ft.Container(width=10),
+            moves_text  
+        ],
+        wrap=True
+    )
 
     page.appbar = ft.AppBar(
         leading=ft.Image(src="/images/card.png"),
         leading_width=30,
-        title=ft.Row([
-            ft.Text("Flet Solitaire"),
-            ft.Container(width=40), 
-            score_text,
-            ft.Container(width=20), 
-            timer_text,
-            ft.Container(width=20),
-            moves_text  
-        ]),
+        title=appbar_title_row,
         bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
         actions=[
             ft.IconButton(ft.Icons.SAVE, on_click=lambda e: on_save(), tooltip="Save Game"),
-            ft.TextButton(content="Undo", on_click=lambda e: on_undo()),
-            ft.TextButton(content="New game", on_click=new_game_clicked),
-            ft.TextButton(content="Rules", on_click=show_rules),
-            ft.IconButton(ft.Icons.SETTINGS, on_click=show_settings),
+            ft.IconButton(ft.Icons.UNDO, on_click=lambda e: on_undo(), tooltip="Undo Move"),
+            ft.IconButton(ft.Icons.ADD_BOX, on_click=new_game_clicked, tooltip="New Game"),
+            ft.IconButton(ft.Icons.MENU_BOOK, on_click=show_rules, tooltip="Rules"),
+            ft.IconButton(ft.Icons.SETTINGS, on_click=show_settings, tooltip="Settings"),
             ft.IconButton(ft.Icons.HOME, on_click=lambda e: on_back_to_menu(), tooltip="Back to Menu"),
         ],
     )

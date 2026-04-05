@@ -8,6 +8,8 @@ from solitaire import Solitaire
 def main(page: ft.Page):
     page.title = "Flet Solitaire"
     
+    page.scroll = "auto"
+    
     app_settings = Settings()
     
     if os.path.exists("global_stats.json"):
@@ -131,10 +133,10 @@ def main(page: ft.Page):
             ft.Text(f"Fastest Time: {best_time_str}", size=16, color=ft.Colors.GREY_400),
             ft.Text("|", size=16, color=ft.Colors.GREY_400),
             ft.Text(f"Least Moves: {least_moves_str}", size=16, color=ft.Colors.GREY_400)
-        ], alignment=ft.MainAxisAlignment.CENTER)
+        ], alignment=ft.MainAxisAlignment.CENTER, wrap=True)
         
         menu_controls = [
-            ft.Text("Flet Solitaire", size=40, weight=ft.FontWeight.BOLD),
+            ft.Text("Flet Solitaire", size=40, weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER),
             stats_display,
             ft.Container(height=30), 
             ft.FilledButton("New Game", on_click=lambda e: launch_game(app_settings, False), width=250, height=50),
