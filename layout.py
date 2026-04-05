@@ -1,8 +1,7 @@
 import flet as ft
 from settings import SettingsDialog
 
-
-def create_appbar(page, settings, on_new_game, on_undo, on_back_to_menu):
+def create_appbar(page, settings, on_new_game, on_undo, on_save, on_back_to_menu):
     def new_game_clicked(e):
         on_new_game(settings)
 
@@ -17,7 +16,6 @@ def create_appbar(page, settings, on_new_game, on_undo, on_back_to_menu):
         settings_dialog.open = True
         page.update()
 
-    # Define all three UI text elements
     score_text = ft.Text("Score: 0", weight=ft.FontWeight.BOLD, size=18)
     timer_text = ft.Text("Time: 00:00", weight=ft.FontWeight.BOLD, size=18)
     moves_text = ft.Text("Moves: 0", weight=ft.FontWeight.BOLD, size=18)
@@ -32,10 +30,11 @@ def create_appbar(page, settings, on_new_game, on_undo, on_back_to_menu):
             ft.Container(width=20), 
             timer_text,
             ft.Container(width=20),
-            moves_text  # Add the moves text to the appbar
+            moves_text  
         ]),
         bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
         actions=[
+            ft.IconButton(ft.Icons.SAVE, on_click=lambda e: on_save(), tooltip="Save Game"),
             ft.TextButton(content="Undo", on_click=lambda e: on_undo()),
             ft.TextButton(content="New game", on_click=new_game_clicked),
             ft.TextButton(content="Rules", on_click=show_rules),
@@ -65,5 +64,4 @@ def create_appbar(page, settings, on_new_game, on_undo, on_back_to_menu):
         on_dismiss=lambda e: print("Dialog dismissed!"),
     )
     
-    # Return ALL THREE elements so main.py can unpack them successfully
     return score_text, timer_text, moves_text
